@@ -1,2 +1,14 @@
+# OS generated files
+.DS_Store
+
+
+# Maven target directory
 target/
 .mvn/wrapper/maven-wrapper.jar
+
+
+# Environment files
+.devcontainer/.env
+
+
+

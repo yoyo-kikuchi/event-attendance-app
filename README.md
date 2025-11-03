@@ -22,4 +22,13 @@
 
 #### 本番環境
 
+## Migration
 
+※ 環境変数から接続情報を取得します。
+
+```bash
+mvn flyway:migrate \
+    -Dflyway.url="jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME" \
+    -Dflyway.user="$DB_USER" \
+    -Dflyway.password="$DB_PASSWORD"
+```

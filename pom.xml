@@ -21,6 +21,12 @@
     <compiler-plugin.version>3.13.0</compiler-plugin.version>
     <war-plugin.version>3.4.0</war-plugin.version>
     <wildfly-plugin.version>5.0.1.Final</wildfly-plugin.version>
+
+    <db.host>${env.DB_HOST}</db.host>
+    <db.port>${env.DB_PORT}</db.port>
+    <db.name>${env.DB_NAME}</db.name>
+    <db.user>${env.DB_USER}</db.user>
+    <db.password>${env.DB_PASSWORD}</db.password>
   </properties>
 
   <dependencies>
@@ -29,6 +35,11 @@
       <artifactId>jakarta.jakartaee-api</artifactId>
       <version>${jakartaee-api.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.8</version>
     </dependency>
   </dependencies>
 
@@ -46,19 +57,98 @@
         <version>${war-plugin.version}</version>
       </plugin>
 
-      <!-- Execute 'mvn clean package wildfly:dev' to run the application. -->
       <plugin>
         <groupId>org.wildfly.plugins</groupId>
         <artifactId>wildfly-maven-plugin</artifactId>
-        <version>${wildfly-plugin.version}</version>
+        <version>4.2.2.Final</version>
         <configuration>
-          <version>${wildfly.version}</version>
-          <server-config>standalone-full.xml</server-config>
+          <version>31.0.1.Final</version>
+          <serverConfig>standalone.xml</serverConfig>
           <serverArgs>
             <serverArg>-b=0.0.0.0</serverArg>
             <serverArg>-bmanagement=0.0.0.0</serverArg>
           </serverArgs>
+          <debug>true</debug>
         </configuration>
+				<executions>
+					<!-- deployment preparation -->
+					<execution>
+						<id>start-server</id>
+						<phase>package</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+					</execution>
+					<!-- deployment -->
+					<execution>
+						<id>deploy-postgresql</id>
+						<phase>package</phase>
+						<goals>
+							<goal>deploy-artifact</goal>
+						</goals>
+						<configuration>
+							<groupId>org.postgresql</groupId>
+							<artifactId>postgresql</artifactId>
+							<name>postgresql.jar</name>
+						</configuration>
+					</execution>
+					<!-- connection-pooling datasource -->
+					<execution>
+						<id>add-datasource</id>
+						<phase>package</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<address>subsystem=datasources,data-source=mydbpool</address>
+							<resources>
+								<resource>
+									<properties>
+										<jndi-name>java:/jdbc/PostgresDS</jndi-name>
+										<connection-url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</connection-url>
+										<driver-class>org.postgresql.Driver</driver-class>
+										<driver-name>postgresql.jar</driver-name>
+                    <user-name>${db.user}</user-name>
+                    <password>${db.password}</password>
+									</properties>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<!-- shutdown before wildfly:dev -->
+					<execution>
+						<id>shutdown-server</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shutdown</goal>
+						</goals>
+					</execution>
+				</executions>
+      </plugin>
+      
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <version>11.15.0</version>
+        <configuration>
+          <locations>
+            <location>filesystem:src/main/resources/db/migration</location>
+          </locations>
+          <baselineOnMigrate>true</baselineOnMigrate>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>11.15.0</version>
+          </dependency>
+
+          <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.8</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

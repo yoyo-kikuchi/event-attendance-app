@@ -9,6 +9,8 @@ services:
     tty: true
     stdin_open: true
     user: java
+    env_file:
+      - .env
     ports:
       - 8080:8080
     volumes:
@@ -22,6 +24,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=event_attendance_app_development
     ports:
       - 5432:5432
     volumes:
